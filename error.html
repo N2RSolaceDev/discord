@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Error</title>
+  <title>Discord Error</title>
   <style>
     /* General Reset */
     * {
@@ -14,9 +14,9 @@
 
     /* Body Styling */
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f4f9;
-      color: #333;
+      font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background-color: #36393f; /* Discord dark background */
+      color: #dcddde; /* Discord light text */
       display: flex;
       justify-content: center;
       align-items: center;
@@ -26,54 +26,91 @@
 
     /* Error Container */
     .error-container {
-      background: #fff;
+      background: #2f3136; /* Discord secondary background */
       padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-      max-width: 400px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      max-width: 450px;
       width: 100%;
+    }
+
+    /* Discord Logo */
+    .discord-logo {
+      width: 100px;
+      height: auto;
+      margin-bottom: 20px;
     }
 
     /* Error Title */
     .error-title {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #e74c3c;
-      margin-bottom: 20px;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #fff; /* White for emphasis */
+      margin-bottom: 15px;
     }
 
     /* Error Message */
     .error-message {
       font-size: 1rem;
       line-height: 1.6;
+      color: #b9bbbe; /* Discord muted text */
       margin-bottom: 30px;
     }
 
     /* Back Button */
     .back-button {
       display: inline-block;
-      background-color: #3498db;
+      background-color: #7289da; /* Discord primary blue */
       color: #fff;
       font-size: 1rem;
       padding: 10px 20px;
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.3s ease;
     }
 
     .back-button:hover {
-      background-color: #2980b9;
+      background-color: #677bc4; /* Slightly darker blue on hover */
+    }
+
+    /* Discord-like Footer */
+    .footer {
+      margin-top: 30px;
+      font-size: 0.9rem;
+      color: #72767d; /* Discord footer text */
+    }
+
+    .footer a {
+      color: #7289da; /* Discord link color */
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div class="error-container">
-    <div class="error-title">Oops!</div>
+    <!-- Discord Logo -->
+    <img src="https://upload.wikimedia.org/wikipedia/commons/7/7e/Discord_Logo_Color.svg" alt="Discord Logo" class="discord-logo">
+    
+    <!-- Error Title -->
+    <div class="error-title">Something Went Wrong</div>
+    
+    <!-- Error Message -->
     <div class="error-message">
-      An error occurred while processing your request. Please try again later.
+      An unexpected error occurred while processing your request. Please try again later or contact support if the issue persists.
     </div>
+    
+    <!-- Back Button -->
     <button class="back-button" onclick="window.history.back()">Go Back</button>
+    
+    <!-- Footer -->
+    <div class="footer">
+      Need help? Visit our <a href="https://support.discord.com" target="_blank">Support Page</a>.
+    </div>
   </div>
 </body>
 </html>
